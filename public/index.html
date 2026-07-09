@@ -140,10 +140,25 @@
     <div class="checkout-box">
       <h3 style="color:var(--accent); margin-top:0;">Validação de Compra</h3>
       <p style="color:var(--text-dim); font-size:14px; margin-bottom:24px;">Envie <b>25 Tibia Coins</b> para o personagem <b>Nora Fylap</b> e digite seus dados abaixo para ativar (30 Dias).</p>
-      <input type="text" id="character" placeholder="Nome do Personagem (Quem enviou)">
-      <input type="text" id="uuid" placeholder="Sua UUID da Máquina">
-      <button class="btn" style="width:100%; margin-top:16px;" onclick="confirmPayment()">VALIDAR PAGAMENTO</button>
-      <button onclick="document.getElementById('checkoutModal').style.display='none'" style="background:transparent; border:none; color:var(--text-dim); margin-top:16px; cursor:pointer;">Cancelar</button>
+      
+      <div id="step1">
+        <input type="text" id="character" placeholder="Nome do Personagem (Quem enviou)">
+        <button class="btn" style="width:100%; margin-top:8px;" onclick="verifyCharacter()">Verificar Personagem</button>
+      </div>
+      
+      <div id="charInfo" style="display:none; margin: 16px 0; padding: 12px; background: var(--surface2); border: 1px solid var(--border-hi); border-radius: 4px; text-align: left; font-size: 14px;">
+        <div style="color: var(--accent); font-weight: bold; margin-bottom: 8px;" id="charNameDisplay"></div>
+        <div><span style="color: var(--text-dim)">Level:</span> <span id="charLevel"></span></div>
+        <div><span style="color: var(--text-dim)">Vocação:</span> <span id="charVocation"></span></div>
+        <div><span style="color: var(--text-dim)">Mundo:</span> <span id="charWorld"></span></div>
+      </div>
+      
+      <div id="step2" style="display:none; margin-top: 16px;">
+        <input type="text" id="uuid" placeholder="Sua UUID da Máquina">
+        <button class="btn" style="width:100%; margin-top:8px;" onclick="confirmPayment()">VALIDAR PAGAMENTO</button>
+      </div>
+      
+      <button onclick="closeCheckout()" style="background:transparent; border:none; color:var(--text-dim); margin-top:16px; cursor:pointer;">Cancelar</button>
       <div id="status" style="margin-top:16px; font-size:14px; font-weight:bold;"></div>
     </div>
   </div>
@@ -151,6 +166,51 @@
   <script>
     function openCheckout() {
       document.getElementById('checkoutModal').style.display = 'flex';
+      document.getElementById('step1').style.display = 'block';
+      document.getElementById('step2').style.display = 'none';
+      document.getElementById('charInfo').style.display = 'none';
+      document.getElementById('status').textContent = '';
+      document.getElementById('character').value = '';
+      document.getElementById('uuid').value = '';
+    }
+    
+    function closeCheckout() {
+      document.getElementById('checkoutModal').style.display = 'none';
+    }
+
+    async function verifyCharacter() {
+      const character = document.getElementById('character').value;
+      const status = document.getElementById('status');
+      
+      if(!character) {
+        status.style.color = '#ef4444';
+        status.textContent = 'Digite o nome do personagem.';
+        return;
+      }
+      
+      status.style.color = '#c9a227';
+      status.textContent = 'Verificando personagem...';
+      
+      try {
+        const res = await fetch(`/api/character/${encodeURIComponent(character)}`);
+        const data = await res.json();
+        
+        if(!res.ok) throw new Error(data.error || 'Erro ao verificar personagem');
+        
+        status.textContent = '';
+        
+        document.getElementById('charNameDisplay').textContent = data.name;
+        document.getElementById('charLevel').textContent = data.level;
+        document.getElementById('charVocation').textContent = data.vocation;
+        document.getElementById('charWorld').textContent = data.world;
+        document.getElementById('charInfo').style.display = 'block';
+        
+        document.getElementById('step1').style.display = 'none';
+        document.getElementById('step2').style.display = 'block';
+      } catch (err) {
+        status.style.color = '#ef4444';
+        status.textContent = err.message;
+      }
     }
     
     async function confirmPayment() {
