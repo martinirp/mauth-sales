@@ -1,221 +1,189 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>M·Auth — Adquirir Licença</title>
-    <!-- Fonte Google Outfit & JetBrains Mono -->
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Outfit:wght@300;400;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="style.css">
+  <meta charset="UTF-8">
+  <title>M-Auth | A Suíte Definitiva para Tibia</title>
+  <style>
+    :root {
+      --bg: #050505;
+      --surface: #0a0a0a;
+      --surface2: #111111;
+      --accent: #c9a227;
+      --accent-hover: #b38f22;
+      --text: #e2e8f0;
+      --text-dim: #94a3b8;
+      --border: #1e1e1e;
+      --border-hi: #2a2a2a;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0; padding: 0;
+      background: var(--bg); color: var(--text);
+      font-family: 'Inter', 'Segoe UI', sans-serif;
+      overflow-x: hidden;
+    }
+    nav {
+      display: flex; justify-content: space-between; align-items: center;
+      padding: 24px 64px; border-bottom: 1px solid var(--border);
+      background: rgba(5,5,5,0.8); backdrop-filter: blur(10px);
+      position: sticky; top: 0; z-index: 100;
+    }
+    .logo { font-size: 24px; font-weight: 800; letter-spacing: 2px; color: var(--accent); }
+    .hero {
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      min-height: 80vh; text-align: center; padding: 40px 20px;
+      background: radial-gradient(circle at center, rgba(201,162,39,0.05) 0%, transparent 60%);
+    }
+    .hero h1 { font-size: 56px; margin-bottom: 16px; font-weight: 800; line-height: 1.1; }
+    .hero p { font-size: 20px; color: var(--text-dim); max-width: 600px; margin-bottom: 40px; }
+    .btn {
+      padding: 16px 32px; background: var(--accent); color: var(--bg);
+      border: none; border-radius: 4px; font-size: 16px; font-weight: bold;
+      cursor: pointer; transition: all 0.3s ease; text-decoration: none;
+      text-transform: uppercase; letter-spacing: 1px;
+    }
+    .btn:hover { background: var(--accent-hover); transform: translateY(-2px); box-shadow: 0 10px 20px rgba(201,162,39,0.2); }
+    
+    .mockup-container {
+      margin: -60px auto 100px; width: 800px; max-width: 90vw;
+      background: var(--surface); border: 1px solid var(--border-hi);
+      border-radius: 12px; box-shadow: 0 30px 60px rgba(0,0,0,0.8);
+      overflow: hidden; position: relative;
+    }
+    .mockup-header {
+      background: var(--surface2); padding: 12px 20px; border-bottom: 1px solid var(--border-hi);
+      display: flex; gap: 8px; align-items: center;
+    }
+    .circle { width: 12px; height: 12px; border-radius: 50%; background: #333; }
+    .mockup-body { padding: 40px; display: flex; gap: 40px; }
+    .mockup-sidebar { flex: 1; border-right: 1px solid var(--border-hi); padding-right: 40px; }
+    .mockup-content { flex: 2; }
+    
+    .features { display: flex; gap: 24px; padding: 64px; justify-content: center; flex-wrap: wrap; }
+    .feature-card {
+      background: var(--surface); border: 1px solid var(--border); padding: 32px;
+      border-radius: 8px; width: 320px; transition: transform 0.3s, border 0.3s;
+    }
+    .feature-card:hover { transform: translateY(-5px); border-color: var(--accent); }
+    .feature-icon { font-size: 32px; margin-bottom: 16px; color: var(--accent); }
+    
+    .checkout-modal {
+      display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.9);
+      align-items: center; justify-content: center; z-index: 1000;
+    }
+    .checkout-box {
+      background: var(--surface); border: 1px solid var(--accent); padding: 40px;
+      width: 480px; border-radius: 8px; text-align: center;
+    }
+    .checkout-box input {
+      width: 100%; padding: 12px; margin-bottom: 16px;
+      background: var(--surface2); border: 1px solid var(--border-hi);
+      color: var(--text); outline: none; border-radius: 4px;
+    }
+  </style>
 </head>
 <body>
+  <nav>
+    <div class="logo">M·Auth</div>
+    <a href="#" class="btn" onclick="openCheckout()">Obter Acesso (25 TC)</a>
+  </nav>
 
-    <!-- Background Noir com Grid e Brilhos -->
-    <div class="noir-background">
-        <div class="glow-orb target-orb-1"></div>
-        <div class="glow-orb target-orb-2"></div>
-        <div class="bg-grid"></div>
+  <section class="hero">
+    <h1>Controle Total. <br>Segurança Absoluta.</h1>
+    <p>A primeira suíte completa para gerenciamento em massa, injeção de TOTP e remoção de Trusted Devices sem estourar limites.</p>
+    <a href="#" class="btn" onclick="openCheckout()">Assinar (30 Dias)</a>
+  </section>
+
+  <div class="mockup-container">
+    <div class="mockup-header">
+      <div class="circle" style="background:#ef4444"></div>
+      <div class="circle" style="background:#eab308"></div>
+      <div class="circle" style="background:#22c55e"></div>
     </div>
-
-    <!-- Container Central -->
-    <main class="container">
-        
-        <!-- Header / Logo -->
-        <header class="app-header">
-            <div class="logo">
-                <span class="logo-symbol">AUTH</span>
-                <span class="logo-accent">· X</span>
-            </div>
-            <p class="tagline">Gerenciador Seguro de Contas Tibia & Autenticador TOTP</p>
-        </header>
-
-        <!-- Selector Tabs -->
-        <div class="product-tabs">
-            <button class="tab-btn active" data-product="mauth">
-                <span class="tab-icon">🛡️</span>
-                <span class="tab-text">M·Auth</span>
-            </button>
-            <button class="tab-btn" data-product="bossbot">
-                <span class="tab-icon">🐲</span>
-                <span class="tab-text">BossBot 2</span>
-            </button>
+    <div class="mockup-body">
+      <div class="mockup-sidebar">
+        <div style="font-size:12px; color:var(--text-dim); margin-bottom:16px;">SEC.</div>
+        <div style="display:flex; justify-content:space-between; margin-bottom:12px; padding:12px; background:var(--surface2); border-left:2px solid var(--accent);">
+          <span>Lord Limbus</span> <span style="color:var(--accent)">✔</span>
         </div>
+        <div style="display:flex; justify-content:space-between; margin-bottom:12px; padding:12px; background:var(--surface2);">
+          <span>Genkidamma</span> <span style="color:var(--text-dim)">...</span>
+        </div>
+      </div>
+      <div class="mockup-content">
+        <h3 style="margin-top:0; color:var(--accent);">Dashboard</h3>
+        <p style="color:var(--text-dim); line-height:1.6; font-size:14px;">Automação perfeita rodando em background com Proxies e Sessões Isoladas. Não passe mais dor de cabeça removendo dispositivos um por um.</p>
+      </div>
+    </div>
+  </div>
 
-        <section class="sales-grid">
-            
-            <!-- Apresentação do Produto -->
-            <div class="product-info">
-                <h1 class="title">Adquira sua Licença do <span class="highlight" id="product-title">M·Auth</span></h1>
-                <p class="description" id="product-desc">
-                    Desbloqueie o poder do autenticador de contas definitivo. Uma ferramenta portátil, criptografada localmente e integrada ao Windows para automação instantânea sem perda de contas.
-                </p>
+  <section class="features">
+    <div class="feature-card">
+      <div class="feature-icon">🛡️</div>
+      <h3>Remoção em Massa</h3>
+      <p style="color:var(--text-dim); font-size:14px;">Selecione quantas contas quiser e deixe o M-Auth limpar todos os Trusted Devices automaticamente.</p>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon">⚡</div>
+      <h3>Injeção TOTP</h3>
+      <p style="color:var(--text-dim); font-size:14px;">Geração de chaves e injeção sem precisar abrir o aplicativo do Authenticator no celular.</p>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon">🔒</div>
+      <h3>Arquitetura Noir</h3>
+      <p style="color:var(--text-dim); font-size:14px;">A interface mais polida e elegante do mercado, desenhada para máxima eficiência.</p>
+    </div>
+  </section>
 
-                <!-- Botão de Download -->
-                <div style="margin-bottom: 30px;">
-                    <a id="download-link" href="https://github.com/martinirp/mauth-public/releases/latest/download/mauth-setup.exe" class="btn-primary" style="display: inline-flex; align-items: center; justify-content: center; gap: 10px; text-decoration: none; width: auto; padding: 14px 28px; font-size: 16px;">
-                        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
-                            <polyline points="7 10 12 15 17 10"></polyline>
-                            <line x1="12" y1="15" x2="12" y2="3"></line>
-                        </svg>
-                        Baixar Última Versão
-                    </a>
-                </div>
+  <!-- Checkout -->
+  <div class="checkout-modal" id="checkoutModal">
+    <div class="checkout-box">
+      <h3 style="color:var(--accent); margin-top:0;">Validação de Compra</h3>
+      <p style="color:var(--text-dim); font-size:14px; margin-bottom:24px;">Envie <b>25 Tibia Coins</b> para o personagem <b>Nora Fylap</b> e digite seus dados abaixo para ativar (30 Dias).</p>
+      <input type="text" id="character" placeholder="Nome do Personagem (Quem enviou)">
+      <input type="text" id="uuid" placeholder="Sua UUID da Máquina">
+      <button class="btn" style="width:100%; margin-top:16px;" onclick="confirmPayment()">VALIDAR PAGAMENTO</button>
+      <button onclick="document.getElementById('checkoutModal').style.display='none'" style="background:transparent; border:none; color:var(--text-dim); margin-top:16px; cursor:pointer;">Cancelar</button>
+      <div id="status" style="margin-top:16px; font-size:14px; font-weight:bold;"></div>
+    </div>
+  </div>
 
-                <!-- Benefícios -->
-                <div class="features-list">
-                    <div class="feature-item">
-                        <div class="feature-icon" id="feat-icon-1">🛡️</div>
-                        <div class="feature-content">
-                            <h3 id="feat-title-1">Segurança Offline e Criptografia</h3>
-                            <p id="feat-desc-1">As contas e senhas mestras ficam salvas apenas no seu computador com proteção AES-256.</p>
-                        </div>
-                    </div>
-                    <div class="feature-item">
-                        <div class="feature-icon" id="feat-icon-2">⚡</div>
-                        <div class="feature-content">
-                            <h3 id="feat-title-2">Automação PowerShell Avançada</h3>
-                            <p id="feat-desc-2">Otimize sua gameplay com o Login Automatizado <i>stealth</i>, Loot Splitter de alta precisão e Smart Exit de resposta instantânea para situações críticas.</p>
-                        </div>
-                    </div>
-                    <div class="feature-item">
-                        <div class="feature-icon" id="feat-icon-3">🔄</div>
-                        <div class="feature-content">
-                            <h3 id="feat-title-3">Sincronização Integrada</h3>
-                            <p id="feat-desc-3">Acompanhe level, vocação e status de login dos seus personagens diretamente no grid do app.</p>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Caixa de Compra / Checkout -->
-            <div class="checkout-card">
-                
-                <!-- Progresso de Etapa -->
-                <div class="steps-indicator">
-                    <span class="step-dot active" id="dot-1" data-step="1">1</span>
-                    <span class="step-line"></span>
-                    <span class="step-dot" id="dot-2" data-step="2">2</span>
-                    <span class="step-line"></span>
-                    <span class="step-dot" id="dot-3" data-step="3">3</span>
-                </div>
-
-                <div class="card-inner">
-                    
-                    <!-- ETAPA 1: Nome do Personagem e UUID -->
-                    <div class="step-content active" id="step-1">
-                        <h2>Dados de Ativação</h2>
-                        <p class="subtitle">Insira as informações para validação e liberação automática da sua licença.</p>
-
-                        <div class="input-group">
-                            <label for="char-name">Seu Personagem no Tibia</label>
-                            <input type="text" id="char-name" placeholder="Ex: Nora Fylap" autocomplete="off">
-                            <span class="input-desc">Este personagem será usado para cruzar o envio de Tibia Coins.</span>
-                        </div>
-
-                        <div class="input-group">
-                            <label for="hwid-uuid">UUID de Hardware da sua Máquina</label>
-                            <input type="text" id="hwid-uuid" placeholder="Ex: F60AC7D1-EAD3-77E2-E60F-BCFCE78A91BA" autocomplete="off">
-                            <span class="input-desc" id="uuid-desc-text">UUID exibida na tela vermelha de bloqueio do seu M-Auth.</span>
-                        </div>
-
-                        <button class="btn-primary" id="btn-next-1">Continuar</button>
-                    </div>
-
-                    <!-- ETAPA 2: Validação do Personagem -->
-                    <div class="step-content" id="step-2">
-                        <h2>Confirmar Personagem</h2>
-                        <p class="subtitle">Verifique se as informações abaixo correspondem ao seu boneco oficial.</p>
-
-                        <div class="character-preview-card" id="char-preview">
-                            <div class="preview-header">
-                                <span class="status-indicator"></span>
-                                <h3 id="preview-name">Buscando...</h3>
-                            </div>
-                            <div class="preview-body">
-                                <div class="preview-stat">
-                                    <span class="label">Mundo</span>
-                                    <span class="value" id="preview-world">-</span>
-                                </div>
-                                <div class="preview-stat">
-                                    <span class="label">Level</span>
-                                    <span class="value" id="preview-level">-</span>
-                                </div>
-                                <div class="preview-stat">
-                                    <span class="label">Vocação</span>
-                                    <span class="value" id="preview-vocation">-</span>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div class="btn-group">
-                            <button class="btn-secondary" id="btn-back-2">Voltar</button>
-                            <button class="btn-primary" id="btn-next-2">Tudo Certo</button>
-                        </div>
-                    </div>
-
-                    <!-- ETAPA 3: Instruções de Envio e Confirmação -->
-                    <div class="step-content" id="step-3">
-                        <h2>Instruções de Pagamento</h2>
-                        <p class="subtitle">Envie as moedas dentro do jogo para liberar sua licença automaticamente.</p>
-
-                        <div class="payment-instructions">
-                            <div class="instruction-box">
-                                <p class="action">Envie <span class="accent-text" id="coins-amount-text">25 Tibia Coins</span></p>
-                                <p class="target">para o personagem: <strong id="recipient-name" class="selectable">Nora Fylap</strong></p>
-                            </div>
-                            <div class="tip-box">
-                                <span class="tip-icon">ℹ️</span>
-                                <p>O envio é 100% automático. Nosso monitor lerá o histórico da conta e liberará sua licença assim que as moedas forem presenteadas.</p>
-                            </div>
-                        </div>
-
-                        <div class="loader-container" id="payment-loader" style="display: none;">
-                            <div class="spinner"></div>
-                            <p id="loader-text">Aguardando confirmação do pagamento...</p>
-                        </div>
-
-                        <div class="error-msg" id="payment-error"></div>
-
-                        <div class="btn-group">
-                            <button class="btn-secondary" id="btn-back-3">Voltar</button>
-                            <button class="btn-primary" id="btn-confirm">Confirmar Envio</button>
-                        </div>
-                    </div>
-
-                    <!-- ETAPA 4: Sucesso -->
-                    <div class="step-content" id="step-4">
-                        <div class="success-header">
-                            <span class="success-icon">✔️</span>
-                            <h2>Licença Autorizada!</h2>
-                        </div>
-                        <p class="subtitle">O pagamento de <span id="success-coins-amount">25</span> Tibia Coins foi recebido e seu UUID foi registrado com sucesso.</p>
-
-                        <div class="hwid-registered-box">
-                            <span class="label" id="success-file-label">UUID Habilitada no mauth.txt:</span>
-                            <code id="success-uuid">-</code>
-                        </div>
-
-                        <p class="info-note" id="success-info-note">Você já pode abrir o seu M·Auth. A tela de bloqueio sumirá e o app iniciará normalmente.</p>
-
-                        <button class="btn-primary" onclick="window.location.reload()">Adquirir Outra Licença</button>
-                    </div>
-
-                </div>
-
-            </div>
-
-        </section>
-
-        <!-- Footer -->
-        <footer class="app-footer">
-            <p>© 2026 AUTH·X. Todos os direitos reservados. Design e licenças oficiais por Martinirp.</p>
-        </footer>
-
-    </main>
-
-    <script src="app.js"></script>
+  <script>
+    function openCheckout() {
+      document.getElementById('checkoutModal').style.display = 'flex';
+    }
+    
+    async function confirmPayment() {
+      const character = document.getElementById('character').value;
+      const uuid = document.getElementById('uuid').value;
+      const status = document.getElementById('status');
+      
+      if(!character || !uuid) {
+        status.style.color = '#ef4444';
+        status.textContent = 'Preencha todos os dados.';
+        return;
+      }
+      
+      status.style.color = '#c9a227';
+      status.textContent = 'Verificando histórico de Tibia Coins...';
+      
+      try {
+        const res = await fetch('/api/confirm-payment', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ character, uuid, product: 'mauth' })
+        });
+        const data = await res.json();
+        
+        if(!res.ok) throw new Error(data.error);
+        
+        status.style.color = '#22c55e';
+        status.textContent = data.message;
+      } catch(err) {
+        status.style.color = '#ef4444';
+        status.textContent = err.message;
+      }
+    }
+  </script>
 </body>
 </html>

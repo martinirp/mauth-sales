@@ -3,13 +3,16 @@ const express = require('express');
 const path = require('path');
 
 const app = express();
-const PORT = process.env.PORT || 5000;
+const PORT = process.env.PORT || 8090;
 const COINS_API_URL = process.env.COINS_API_URL || 'http://127.0.0.1:5001';
+
+const GIST_ID = '4cd4e8d26eb6efbc292ca41fdda70af8';
+const GITHUB_TOKEN = process.env.GITHUB_TOKEN || 'ghp_YOUR_TOKEN_HERE';
 
 app.use(express.json());
 app.use(express.static(path.join(__dirname, 'public')));
 
-// Proxy para buscar dados do personagem no TibiaData (para evitar CORS)
+// Proxy para buscar dados do personagem no TibiaData
 app.get('/api/character/:name', async (req, res) => {
   try {
     const name = req.params.name;
@@ -17,206 +20,185 @@ app.get('/api/character/:name', async (req, res) => {
     console.log(`[*] Buscando personagem '${name}' na API TibiaData...`);
     
     const response = await fetch(url);
-    if (!response.ok) {
-      return res.status(response.status).json({ error: 'Erro ao consultar a API TibiaData' });
-    }
+    if (!response.ok) return res.status(response.status).json({ error: 'Erro ao consultar a API TibiaData' });
     
     const data = await response.json();
     if (!data.character || !data.character.character || !data.character.character.name) {
       return res.status(404).json({ error: 'Personagem nao encontrado' });
     }
     
-    // Retornar dados simplificados
     const char = data.character.character;
-    res.json({
-      name: char.name,
-      world: char.world,
-      level: char.level,
-      vocation: char.vocation
-    });
+    res.json({ name: char.name, world: char.world, level: char.level, vocation: char.vocation });
   } catch (err) {
-    console.error('[-] Erro no proxy do TibiaData:', err.message);
     res.status(500).json({ error: 'Erro interno no servidor' });
   }
 });
 
-// Confirmar pagamento e adicionar licença no GitHub keys.txt
+// Retorna YYYY-MM-DD para daqui a 30 dias
+function getExpirationDate() {
+  const date = new Date();
+  date.setDate(date.getDate() + 30);
+  return date.toISOString().split('T')[0];
+}
+
+// Atualiza o Gist
+async function updateGist(uuid, character = 'Unknown') {
+  const url = `https://api.github.com/gists/${GIST_ID}`;
+  const headers = {
+    'Authorization': `token ${GITHUB_TOKEN}`,
+    'Accept': 'application/vnd.github.v3+json',
+    'User-Agent': 'Mauth-Sales-App'
+  };
+
+  const getRes = await fetch(url, { headers });
+  if (!getRes.ok) throw new Error(`Falha ao ler Gist: ${getRes.status}`);
+  
+  const getJson = await getRes.json();
+  const file = getJson.files['mauth.txt'];
+  let contentText = file ? file.content : '';
+
+  const cleanUuid = uuid.trim().toUpperCase();
+  
+  // Evita duplicatas se UUID já constar (só checa a string)
+  if (contentText.includes(cleanUuid)) {
+    console.log(`[*] UUID ${cleanUuid} ja consta no Gist.`);
+    return true;
+  }
+
+  const expDate = getExpirationDate();
+  const newEntry = `[EXP: ${expDate}] ${cleanUuid} # Boneco: ${character}`;
+  
+  let updatedText = contentText;
+  if (!updatedText.endsWith('\n') && updatedText.length > 0) updatedText += '\n';
+  updatedText += newEntry + '\n';
+
+  const patchBody = { files: { 'mauth.txt': { content: updatedText } } };
+
+  const patchRes = await fetch(url, {
+    method: 'PATCH',
+    headers: { ...headers, 'Content-Type': 'application/json' },
+    body: JSON.stringify(patchBody)
+  });
+
+  if (!patchRes.ok) throw new Error(`Erro ao gravar no Gist: ${patchRes.status}`);
+  return true;
+}
+
+// Limpeza de licenças expiradas no Gist
+async function cleanExpiredGistLicenses() {
+  console.log(`[*] Verificando licenças expiradas no Gist...`);
+  try {
+    const url = `https://api.github.com/gists/${GIST_ID}`;
+    const headers = {
+      'Authorization': `token ${GITHUB_TOKEN}`,
+      'Accept': 'application/vnd.github.v3+json',
+      'User-Agent': 'Mauth-Sales-App'
+    };
+
+    const getRes = await fetch(url, { headers });
+    if (!getRes.ok) return;
+    
+    const getJson = await getRes.json();
+    const file = getJson.files['mauth.txt'];
+    if (!file) return;
+
+    const lines = file.content.split('\n');
+    let hasChanges = false;
+    const today = new Date().toISOString().split('T')[0];
+
+    const newLines = lines.filter(line => {
+      const match = line.match(/\[EXP: (\d{4}-\d{2}-\d{2})\]/);
+      if (match) {
+        if (match[1] < today) {
+          console.log(`[*] Apagando licença expirada: ${line}`);
+          hasChanges = true;
+          return false; 
+        }
+      }
+      return true;
+    });
+
+    if (hasChanges) {
+      await fetch(url, {
+        method: 'PATCH',
+        headers: { ...headers, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ files: { 'mauth.txt': { content: newLines.join('\n') } } })
+      });
+      console.log(`[*] Limpeza do Gist finalizada!`);
+    } else {
+      console.log(`[*] Gist limpo. Nenhuma licença vencida.`);
+    }
+  } catch (err) {
+    console.error(`[-] Erro no lixeiro do Gist:`, err.message);
+  }
+}
+
+// Confirmação de Pagamento
 app.post('/api/confirm-payment', async (req, res) => {
   const { character, uuid, product } = req.body;
-  console.log(`[*] Recebida requisicao de confirmacao: Personagem='${character}', UUID='${uuid}', Produto='${product}'`);
-
-  if (!character || !uuid) {
-    return res.status(400).json({ error: 'Dados incompletos. Nome do personagem e UUID da maquina sao obrigatorios.' });
-  }
+  if (!character || !uuid) return res.status(400).json({ error: 'Dados incompletos.' });
 
   const cleanChar = character.trim();
   const cleanUuid = uuid.trim().toUpperCase();
   const cleanProduct = (product || 'mauth').trim().toLowerCase();
 
-  // Validar formato básico de UUID
-  if (cleanUuid.length < 10) {
-    return res.status(400).json({ error: 'UUID de maquina invalido.' });
-  }
+  if (cleanUuid.length < 10) return res.status(400).json({ error: 'UUID invalida.' });
 
   try {
-    let requiredAmount = 25;
-    let filePath = 'mauth.txt';
+    const requiredAmount = cleanProduct.includes('bossbot') 
+      ? parseInt(process.env.BOSSBOT_COINS_AMOUNT || '1000', 10)
+      : parseInt(process.env.MAUTH_COINS_AMOUNT || '25', 10);
 
-    if (cleanProduct === 'bossbot' || cleanProduct === 'bossbot2') {
-      requiredAmount = parseInt(process.env.BOSSBOT_COINS_AMOUNT || '1000', 10);
-      filePath = process.env.HWID_FILE_PATH_BOSSBOT || 'bossbot.txt';
-    } else {
-      requiredAmount = parseInt(process.env.MAUTH_COINS_AMOUNT || '25', 10);
-      filePath = process.env.HWID_FILE_PATH_MAUTH || 'mauth.txt';
-    }
-
-    // 1. Consultar a Coins API para ver se o pagamento existe e está pendente
-    console.log(`[*] Consultando Coins API para '${cleanChar}' (Mínimo: ${requiredAmount} TC)...`);
     const checkUrl = `${COINS_API_URL}/api/check-payment?character=${encodeURIComponent(cleanChar)}&amount=${requiredAmount}`;
     const checkRes = await fetch(checkUrl);
-    
-    if (!checkRes.ok) {
-      const errData = await checkRes.json();
-      return res.status(checkRes.status).json({ 
-        error: errData.error || 'Erro ao comunicar com a API de moedas.' 
-      });
-    }
+    if (!checkRes.ok) return res.status(checkRes.status).json({ error: 'Erro ao conectar com Coins API.' });
     
     const checkData = await checkRes.json();
     if (!checkData.found || !checkData.payment) {
-      return res.status(404).json({ 
-        error: `Pagamento nao encontrado no nosso historico de Nora Fylap. Certifique-se de ter enviado ${requiredAmount} Tibia Coins de '${character}' e tente novamente.` 
-      });
+      return res.status(404).json({ error: `Pagamento nao encontrado (Min: ${requiredAmount} TC).` });
     }
     
     const payment = checkData.payment;
-    const officialCharName = payment.character;
     
-    // 2. Marcar a transação como usada na Coins API
-    console.log(`[*] Marcando transacao ${payment.id} como usada na Coins API...`);
     const useUrl = `${COINS_API_URL}/api/use-payment`;
     const useRes = await fetch(useUrl, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({
-        id: payment.id,
-        metadata: {
-          uuid: cleanUuid,
-          activatedAt: new Date().toISOString()
-        }
-      })
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id: payment.id, metadata: { uuid: cleanUuid } })
     });
     
-    if (!useRes.ok) {
-      const errData = await useRes.json();
-      return res.status(useRes.status).json({ 
-        error: errData.error || 'Erro ao resgatar a transacao de moedas na API.' 
-      });
-    }
+    if (!useRes.ok) return res.status(useRes.status).json({ error: 'Erro ao resgatar transacao.' });
     
-    // 3. Adicionar a licença no GitHub
-    console.log(`[*] Pagamento de '${officialCharName}' localizado e validado. Atualizando chaves no GitHub em ${filePath} para UUID: ${cleanUuid}...`);
-    await addUuidToGithub(cleanUuid, officialCharName, filePath);
-
-    res.json({ status: 'success', message: 'Licenca ativada com sucesso!' });
+    await updateGist(cleanUuid, payment.character);
+    res.json({ status: 'success', message: 'Licenca de 30 dias ativada com sucesso!' });
   } catch (err) {
-    console.error('[-] Erro ao confirmar pagamento:', err.message);
-    res.status(500).json({ error: err.message || 'Erro ao processar ativacao da licenca no GitHub.' });
+    res.status(500).json({ error: err.message || 'Erro interno.' });
   }
 });
 
-// Envia a UUID autorizada para a keys.txt no GitHub
-async function addUuidToGithub(uuid, character = 'Unknown', filePath = 'mauth.txt') {
-  const token = (process.env.MAUTH_GITHUB_TOKEN || process.env.GITHUB_TOKEN || '').trim();
-  const owner = (process.env.HWID_REPO_OWNER || '').trim() || 'martinirp';
-  const repo = (process.env.HWID_REPO_NAME || '').trim() || 'licenses';
-
-  console.log(`[*] addUuidToGithub configs: owner='${owner}', repo='${repo}', filePath='${filePath}', tokenLength=${token.length}`);
-
-  if (!token || token.includes('insira_seu_token')) {
-    throw new Error('Chave de API do GitHub (MAUTH_GITHUB_TOKEN) nao configurada no .env do servidor de vendas.');
+// Geração Admin de Licenças (Bypass)
+app.post('/api/admin/generate', async (req, res) => {
+  const { username, password, character, uuid } = req.body;
+  if (username !== 'genkidamma' || password !== 'C7kgxmwt!@#') {
+    return res.status(401).json({ error: 'Acesso negado: Credenciais inválidas.' });
   }
-
-  const url = `https://api.github.com/repos/${owner}/${repo}/contents/${filePath}`;
-
-  const headers = {
-    'Authorization': `token ${token}`,
-    'Accept': 'application/vnd.github.v3+json',
-    'User-Agent': 'Mauth-Sales-App'
-  };
-
-  // 1. Baixar o arquivo de licenças atual do GitHub (ou preparar criação caso não exista)
-  console.log(`[*] Buscando sha do arquivo ${filePath} no GitHub...`);
-  const getRes = await fetch(url, { headers });
   
-  let currentSha = undefined;
-  let contentText = "";
+  if (!character || !uuid) return res.status(400).json({ error: 'Faltam dados obrigatórios.' });
 
-  if (getRes.status === 404) {
-    console.log(`[*] Arquivo ${filePath} nao existe no GitHub. Ele sera criado automaticamente.`);
-  } else if (!getRes.ok) {
-    throw new Error(`Falha ao ler ${filePath} do GitHub: ${getRes.status} ${getRes.statusText}`);
-  } else {
-    const getJson = await getRes.json();
-    currentSha = getJson.sha;
-    contentText = Buffer.from(getJson.content, 'base64').toString('utf8');
+  try {
+    await updateGist(uuid, character);
+    res.json({ status: 'success', message: `Licença manual gerada para '${character}' (Validade 30 dias).` });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
   }
+});
 
-  // 2. Verificar se o UUID já está lá
-  const cleanUuid = uuid.trim().toUpperCase();
-  const lines = contentText.split('\n').map(l => l.trim().toUpperCase());
-  if (lines.includes(cleanUuid)) {
-    console.log(`[*] UUID ${cleanUuid} ja cadastrado no arquivo ${filePath} do GitHub.`);
-    return true;
-  }
+setInterval(cleanExpiredGistLicenses, 86400000);
+setTimeout(cleanExpiredGistLicenses, 5000);
 
-  // 3. Adicionar o UUID ao arquivo
-  let updatedText = contentText;
-  if (!updatedText.endsWith('\n') && updatedText.length > 0) {
-    updatedText += '\n';
-  }
-  updatedText += `# Boneco: ${character}\n`;
-  updatedText += `${cleanUuid}\n`;
-
-  // 4. Salvar de volta no GitHub (PUT)
-  console.log(`[*] Gravando novo UUID no arquivo ${filePath} do GitHub...`);
-  const putBody = {
-    message: `Add authorized license key: ${cleanUuid} (${character})`,
-    content: Buffer.from(updatedText, 'utf8').toString('base64'),
-    branch: 'main'
-  };
-  
-  if (currentSha) {
-    putBody.sha = currentSha;
-  }
-
-  const putRes = await fetch(url, {
-    method: 'PUT',
-    headers: {
-      ...headers,
-      'Content-Type': 'application/json'
-    },
-    body: JSON.stringify(putBody)
-  });
-
-  if (!putRes.ok) {
-    const errText = await putRes.text();
-    throw new Error(`Erro ao gravar dados no GitHub: ${putRes.status} - ${errText}`);
-  }
-
-  console.log('[*] Licenca gravada e commitada com sucesso!');
-  return true;
-}
-
-// Iniciar servidor
 app.listen(PORT, '0.0.0.0', () => {
   console.log(`==================================================`);
-  console.log(`🚀 M-Auth Sales Server is running on port ${PORT}`);
-  console.log(`🌐 Acesse localmente: http://127.0.0.1:${PORT}`);
+  console.log(`🚀 M-Auth Sales Server rodando na porta ${PORT}`);
+  console.log(`🌐 Acesse: http://127.0.0.1:${PORT}`);
   console.log(`==================================================`);
-  
-  // Keep event loop alive (necessário para evitar encerramento no PRoot/Termux)
-  setInterval(() => {}, 60000);
 });
