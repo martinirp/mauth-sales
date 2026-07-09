@@ -215,6 +215,16 @@ app.post('/api/admin/generate', async (req, res) => {
   }
 });
 
+// Autenticação simples
+app.post('/api/admin/login', (req, res) => {
+  const { username, password } = req.body;
+  if (username === 'genkidamma' && password === 'C7kgxmwt!@#') {
+    res.json({ status: 'success' });
+  } else {
+    res.status(401).json({ error: 'Credenciais inválidas.' });
+  }
+});
+
 // Atualização das Configurações Globais (Admin)
 app.post('/api/admin/settings', (req, res) => {
   const { username, password, price, targetCharacter } = req.body;

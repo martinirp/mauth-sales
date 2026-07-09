@@ -55,19 +55,25 @@
   </style>
 </head>
 <body>
-  <div class="admin-container">
+  <div class="admin-container" id="loginBlock">
+    <h2 style="margin-bottom: 24px;">Login Restrito</h2>
+    <div class="form-group">
+      <label>Usuário</label>
+      <input type="text" id="loginUsername" placeholder="Seu usuário">
+    </div>
+    <div class="form-group">
+      <label>Senha</label>
+      <input type="password" id="loginPassword" placeholder="••••••••">
+    </div>
+    <button id="btnLogin">ENTRAR</button>
+    <div id="loginStatus" style="margin-top: 15px; font-size: 13px; text-align: center; padding: 10px; border-radius: 4px; display: none;"></div>
+  </div>
+
+  <div class="admin-container" id="adminBlock" style="display: none;">
     <div style="margin-bottom: 30px;">
       <h2>Gerador de Licenças (Admin)</h2>
       <p style="font-size:12px; color:var(--text-dim); text-align:center; margin-bottom:24px;">Gera 30 dias de acesso no Gist ignorando as Tibia Coins.</p>
       
-      <div class="form-group">
-        <label>Usuário</label>
-        <input type="text" id="username" placeholder="genkidamma">
-      </div>
-      <div class="form-group">
-        <label>Senha</label>
-        <input type="password" id="password" placeholder="••••••••">
-      </div>
       <div class="form-group">
         <label>Nome do Boneco</label>
         <input type="text" id="character" placeholder="Ex: Lord Limbus">
@@ -100,26 +106,58 @@
   </div>
 
   <script>
-    document.addEventListener('DOMContentLoaded', async () => {
+    let sessionUser = '';
+    let sessionPass = '';
+
+    document.getElementById('btnLogin').addEventListener('click', async () => {
+      const u = document.getElementById('loginUsername').value;
+      const p = document.getElementById('loginPassword').value;
+      const status = document.getElementById('loginStatus');
+
+      if (!u || !p) {
+        status.textContent = 'Preencha usuário e senha.';
+        status.className = 'error'; status.style.display = 'block'; return;
+      }
+
+      status.style.display = 'none';
+      document.getElementById('btnLogin').textContent = 'VERIFICANDO...';
+      
       try {
-        const res = await fetch('/api/settings');
-        const settings = await res.json();
-        document.getElementById('settingsPrice').value = settings.price;
-        document.getElementById('settingsChar').value = settings.targetCharacter;
-      } catch (e) { console.error('Erro ao carregar settings', e); }
+        const res = await fetch('/api/admin/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ username: u, password: p })
+        });
+        if (!res.ok) throw new Error('Credenciais inválidas');
+        
+        sessionUser = u;
+        sessionPass = p;
+        document.getElementById('loginBlock').style.display = 'none';
+        document.getElementById('adminBlock').style.display = 'block';
+        
+        try {
+          const settingsRes = await fetch('/api/settings');
+          const settings = await settingsRes.json();
+          document.getElementById('settingsPrice').value = settings.price;
+          document.getElementById('settingsChar').value = settings.targetCharacter;
+        } catch (e) { console.error('Erro ao carregar settings', e); }
+      } catch (err) {
+        status.textContent = err.message;
+        status.className = 'error'; status.style.display = 'block';
+      } finally {
+        document.getElementById('btnLogin').textContent = 'ENTRAR';
+      }
     });
 
     document.getElementById('btnGenerate').addEventListener('click', async () => {
       const btn = document.getElementById('btnGenerate');
       const status = document.getElementById('status');
       
-      const username = document.getElementById('username').value;
-      const password = document.getElementById('password').value;
       const character = document.getElementById('character').value;
       const uuid = document.getElementById('uuid').value;
       
-      if(!username || !password || !character || !uuid) {
-        status.textContent = 'Preencha todos os campos.';
+      if(!character || !uuid) {
+        status.textContent = 'Preencha os dados do cliente.';
         status.className = 'error'; status.style.display = 'block'; return;
       }
       
@@ -130,7 +168,7 @@
         const res = await fetch('/api/admin/generate', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ username, password, character, uuid })
+          body: JSON.stringify({ username: sessionUser, password: sessionPass, character, uuid })
         });
         const data = await res.json();
         
@@ -152,13 +190,11 @@
       const btn = document.getElementById('btnSettings');
       const status = document.getElementById('settingsStatus');
       
-      const username = document.getElementById('username').value;
-      const password = document.getElementById('password').value;
       const price = document.getElementById('settingsPrice').value;
       const targetCharacter = document.getElementById('settingsChar').value;
       
-      if(!username || !password || !price || !targetCharacter) {
-        status.textContent = 'Preencha o usuário e senha (no topo) e os novos valores.';
+      if(!price || !targetCharacter) {
+        status.textContent = 'Preencha os novos valores.';
         status.className = 'error'; status.style.display = 'block'; return;
       }
       
@@ -169,7 +205,7 @@
         const res = await fetch('/api/admin/settings', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ username, password, price, targetCharacter })
+          body: JSON.stringify({ username: sessionUser, password: sessionPass, price, targetCharacter })
         });
         const data = await res.json();
         
