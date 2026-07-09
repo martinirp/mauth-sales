@@ -1,6 +1,7 @@
 require('dotenv').config({ path: require('path').join(__dirname, '.env') });
 const express = require('express');
 const path = require('path');
+const fs = require('fs');
 
 const app = express();
 const PORT = process.env.PORT || 8090;
@@ -11,6 +12,26 @@ const GITHUB_TOKEN = process.env.GITHUB_TOKEN || 'ghp_YOUR_TOKEN_HERE';
 
 app.use(express.json());
 app.use(express.static(path.join(__dirname, 'public')));
+
+const SETTINGS_FILE = path.join(__dirname, 'settings.json');
+
+function getSettings() {
+  try {
+    if (fs.existsSync(SETTINGS_FILE)) {
+      return JSON.parse(fs.readFileSync(SETTINGS_FILE, 'utf8'));
+    }
+  } catch(e) { console.error('[-] Erro ao ler settings.json', e.message); }
+  return { price: 25, targetCharacter: 'Nora Fylap' };
+}
+
+function saveSettings(settings) {
+  fs.writeFileSync(SETTINGS_FILE, JSON.stringify(settings, null, 2), 'utf8');
+}
+
+// Endpoint para puxar configurações (Público)
+app.get('/api/settings', (req, res) => {
+  res.json(getSettings());
+});
 
 // Proxy para buscar dados do personagem no TibiaData
 app.get('/api/character/:name', async (req, res) => {
@@ -145,9 +166,10 @@ app.post('/api/confirm-payment', async (req, res) => {
   if (cleanUuid.length < 10) return res.status(400).json({ error: 'UUID invalida.' });
 
   try {
+    const settings = getSettings();
     const requiredAmount = cleanProduct.includes('bossbot') 
       ? parseInt(process.env.BOSSBOT_COINS_AMOUNT || '1000', 10)
-      : parseInt(process.env.MAUTH_COINS_AMOUNT || '25', 10);
+      : parseInt(settings.price || '25', 10);
 
     const checkUrl = `${COINS_API_URL}/api/check-payment?character=${encodeURIComponent(cleanChar)}&amount=${requiredAmount}`;
     const checkRes = await fetch(checkUrl);
@@ -188,6 +210,30 @@ app.post('/api/admin/generate', async (req, res) => {
   try {
     await updateGist(uuid, character);
     res.json({ status: 'success', message: `Licença manual gerada para '${character}' (Validade 30 dias).` });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Atualização das Configurações Globais (Admin)
+app.post('/api/admin/settings', (req, res) => {
+  const { username, password, price, targetCharacter } = req.body;
+  
+  if (username !== 'genkidamma' || password !== 'C7kgxmwt!@#') {
+    return res.status(401).json({ error: 'Acesso negado: Credenciais inválidas.' });
+  }
+  
+  if (!price || !targetCharacter) {
+    return res.status(400).json({ error: 'Faltam dados obrigatórios.' });
+  }
+  
+  try {
+    const settings = {
+      price: parseInt(price, 10),
+      targetCharacter: targetCharacter.trim()
+    };
+    saveSettings(settings);
+    res.json({ status: 'success', message: 'Configurações atualizadas com sucesso!', settings });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }

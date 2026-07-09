@@ -85,7 +85,10 @@
 <body>
   <nav>
     <div class="logo">M·Auth</div>
-    <a href="#" class="btn" onclick="openCheckout()">Obter Acesso (25 TC)</a>
+    <div>
+      <a href="/admin.html" class="btn" style="background:transparent; border:1px solid var(--accent); margin-right: 16px; padding: 10px 20px;">Admin</a>
+      <a href="#" class="btn" onclick="openCheckout()">Obter Acesso (<span class="dynamic-price">25</span> TC)</a>
+    </div>
   </nav>
 
   <section class="hero">
@@ -139,7 +142,7 @@
   <div class="checkout-modal" id="checkoutModal">
     <div class="checkout-box">
       <h3 style="color:var(--accent); margin-top:0;">Validação de Compra</h3>
-      <p style="color:var(--text-dim); font-size:14px; margin-bottom:24px;">Envie <b>25 Tibia Coins</b> para o personagem <b>Nora Fylap</b> e digite seus dados abaixo para ativar (30 Dias).</p>
+      <p style="color:var(--text-dim); font-size:14px; margin-bottom:24px;">Envie <b class="dynamic-price">25</b><b> Tibia Coins</b> para o personagem <b class="dynamic-char">Nora Fylap</b> e digite seus dados abaixo para ativar (30 Dias).</p>
       
       <div id="step1">
         <input type="text" id="character" placeholder="Nome do Personagem (Quem enviou)">
@@ -164,6 +167,18 @@
   </div>
 
   <script>
+    document.addEventListener('DOMContentLoaded', async () => {
+      try {
+        const res = await fetch('/api/settings');
+        const settings = await res.json();
+        
+        document.querySelectorAll('.dynamic-price').forEach(el => el.textContent = settings.price);
+        document.querySelectorAll('.dynamic-char').forEach(el => el.textContent = settings.targetCharacter);
+      } catch (e) {
+        console.error('Erro ao carregar configurações:', e);
+      }
+    });
+
     function openCheckout() {
       document.getElementById('checkoutModal').style.display = 'flex';
       document.getElementById('step1').style.display = 'block';
